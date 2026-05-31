@@ -1,0 +1,124 @@
+# Zoraxy (reverse proxy / gateway)
+#
+# Includes a docker-socket-proxy so Zoraxy can talk to Docker without direct
+# access to /var/run/docker.sock.
+#
+# Requires:
+# - external Docker network `services` (create once before deploying stacks)
+name: zoraxy
+
+volumes:
+  zoraxy-config:
+    name: zoraxy-config
+  zoraxy-plugins:
+    name: zoraxy-plugins
+
+networks:
+  zoraxy:
+    name: zoraxy
+    attachable: true
+    enable_ipv4: true
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: ${ZORAXY_SUBNET:-10.1.0.0/16}
+          gateway: ${ZORAXY_GATEWAY:-10.1.0.0}
+  socket-proxy:
+    name: socket-proxy
+    internal: true
+    enable_ipv4: true
+    enable_ipv6: true
+
+services:
+  socket-proxy:
+    init: true
+    image: linuxserver/socket-proxy:${SOCKET_PROXY_TAG:-latest}
+    restart: always
+    hostname: socket-proxy
+    container_name: socket-proxy
+    read_only: true
+    tmpfs:
+      - /run
+    volumes:
+      - ${SOCKET_MOUNT:-/var/run/docker.sock}:/var/run/docker.sock:ro,z
+    networks:
+      - socket-proxy
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - CONTAINERS=1
+      - NETWORKS=1
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --spider
+        - --no-verbose
+        - --tries=1
+        - http://127.0.0.1:2375/_ping
+      retries: 5
+      timeout: 5s
+      interval: 30s
+      start_period: 5s
+      start_interval: 1s
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
+
+  zoraxy:
+    init: true
+    image: zoraxydocker/zoraxy:${ZORAXY_TAG:-latest}
+    restart: always
+    hostname: zoraxy
+    container_name: zoraxy
+    depends_on:
+      socket-proxy:
+        condition: service_healthy
+    tmpfs:
+      - /tmp
+      - /run
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - zoraxy-config:/opt/zoraxy/config
+      - zoraxy-plugins:/opt/zoraxy/plugins
+    ports:
+      - ${ZORAXY_WEB_PORT:-127.0.0.1:8000}:8000
+      - ${ZORAXY_HTTPS_PORT:-127.0.0.1:443}:443
+      - ${ZORAXY_HTTP_PORT:-127.0.0.1:80}:80
+    networks:
+      - zoraxy
+      - socket-proxy
+    cap_add:
+      - NET_ADMIN
+      - NET_BIND_SERVICE
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      TZ: ${ZORAXY_TIMEZONE:-Etc/UTC}
+      ZEROTIER: ${ZORAXY_ZEROTIER:-true}
+      FASTGEOIP: ${ZORAXY_FASTGEOIP:-false}
+      DOCKER_HOST: tcp://socket-proxy:2375
+    healthcheck:
+      test:
+        - CMD
+        - nc
+        - -vz
+        - 127.0.0.1
+        - "8000"
+      retries: 5
+      timeout: 5s
+      interval: 30s
+      start_period: 30s
+      start_interval: 10s
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
