@@ -38,8 +38,8 @@ services:
     volumes:
       - technitium-config:/etc/dns
       - technitium-logs:/var/log/technitium/dns
-    sysctls:
-      - net.ipv4.ip_local_port_range=1024 65535
+    # sysctls:
+    #   - net.ipv4.ip_local_port_range=1024 65535
     security_opt:
       - no-new-privileges:true
     logging:
