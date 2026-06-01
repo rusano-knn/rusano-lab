@@ -1,0 +1,59 @@
+name: technitium
+
+volumes:
+  technitium-config:
+    name: technitium-config
+  technitium-logs:
+    name: technitium-logs
+
+services:
+  technitium-server:
+    init: true
+    image: technitium/dns-server:${TECHNITIUM_SERVER_TAG:-latest}
+    restart: always
+    hostname: technitium-server
+    container_name: technitium-server
+    ports:
+      - ${TECHNITIUM_SERVER_ADDRESS:-127.0.0.1}:53:53/udp #DNS service
+      - ${TECHNITIUM_SERVER_ADDRESS:-127.0.0.1}:53:53/tcp #DNS service
+      - ${TECHNITIUM_SERVER_ADDRESS:-127.0.0.1}:443:443/udp #DNS-over-HTTPS service (HTTP/3)
+      - ${TECHNITIUM_SERVER_ADDRESS:-127.0.0.1}:443:443/tcp #DNS-over-HTTPS service (HTTP/1.1, HTTP/2)
+      - ${TECHNITIUM_SERVER_ADDRESS:-127.0.0.1}:853:853/udp #DNS-over-QUIC service
+      - ${TECHNITIUM_SERVER_ADDRESS:-127.0.0.1}:853:853/tcp #DNS-over-TLS service
+      - ${TECHNITIUM_WEB_HTTP_PORT:-127.0.0.1:5380}:5380/tcp #DNS web console (HTTP)
+      - ${TECHNITIUM_WEB_HTTPS_PORT:-127.0.0.1:53443}:53443/tcp #DNS web console (HTTPS)
+    volumes:
+      - technitium-config:/etc/dns
+      - technitium-logs:/var/log/technitium/dns
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+    cap_add:
+      - NET_BIND_SERVICE
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
+
+  technitium-client:
+    init: true
+    image: technitium/dns-client:${TECHNITIUM_CLIENT_TAG:-latest}
+    restart: always
+    hostname: technitium-client
+    container_name: technitium-client
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
