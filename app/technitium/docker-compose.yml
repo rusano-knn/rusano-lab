@@ -20,12 +20,12 @@ services:
       - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:443:443/tcp #DNS-over-HTTPS service (HTTP/1.1, HTTP/2)
       - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:853:853/udp #DNS-over-QUIC service
       - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:853:853/tcp #DNS-over-TLS service
-      - ${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}:53:53/udp #DNS service
-      - ${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}:53:53/tcp #DNS service
-      - ${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}:443:443/udp #DNS-over-HTTPS service (HTTP/3)
-      - ${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}:443:443/tcp #DNS-over-HTTPS service (HTTP/1.1, HTTP/2)
-      - ${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}:853:853/udp #DNS-over-QUIC service
-      - ${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}:853:853/tcp #DNS-over-TLS service
+      - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:53:53/udp" #DNS service
+      - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:53:53/tcp" #DNS service
+      - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:443:443/udp" #DNS-over-HTTPS service (HTTP/3)
+      - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:443:443/tcp" #DNS-over-HTTPS service (HTTP/1.1, HTTP/2)
+      - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:853:853/udp" #DNS-over-QUIC service
+      - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:853:853/tcp" #DNS-over-TLS service
       - ${TECHNITIUM_WEB_HTTP_PORT:-127.0.0.1:5380}:5380/tcp #DNS web console (HTTP)
       - ${TECHNITIUM_WEB_HTTPS_PORT:-127.0.0.1:53443}:53443/tcp #DNS web console (HTTPS)
     volumes:
