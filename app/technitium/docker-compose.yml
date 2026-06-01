@@ -6,6 +6,10 @@ volumes:
   technitium-logs:
     name: technitium-logs
 
+networks:
+  zoraxy:
+    external: true
+
 services:
   technitium-server:
     init: true
@@ -13,6 +17,8 @@ services:
     restart: always
     hostname: technitium-server
     container_name: technitium-server
+    networks:
+      - zoraxy
     ports:
       - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:53:53/udp #DNS service
       - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:53:53/tcp #DNS service
@@ -52,6 +58,8 @@ services:
     hostname: technitium-client
     container_name: technitium-client
     read_only: true
+    networks:
+      - zoraxy
     tmpfs:
       - /tmp
     cap_drop:
