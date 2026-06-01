@@ -28,6 +28,11 @@ networks:
     internal: true
     enable_ipv4: true
     enable_ipv6: true
+  cloudflared:
+    name: cloudflared
+    attachable: true
+    enable_ipv4: true
+    enable_ipv6: true
 
 services:
   socket-proxy:
@@ -69,6 +74,50 @@ services:
         max-file: 3
         max-size: 10m
 
+  cloudflared:
+    init: true
+    image: cloudflare/cloudflared:${CLOUDFLARED_TAG:-latest}
+    restart: always
+    hostname: cloudflared
+    container_name: cloudflared
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      - cloudflared
+    cap_drop:
+      - ALL
+    sysctls:
+      - net.ipv4.ping_group_range=0 65532
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NO_AUTOUPDATE: "true"
+      TUNNEL_METRICS: 127.0.0.1:2000
+      TUNNEL_TOKEN: ${CLOUDFLARED_TOKEN:?set CLOUDFLARED_TOKEN in .env}
+    command:
+      - tunnel
+      - run
+    healthcheck:
+      test:
+        - CMD
+        - cloudflared
+        - tunnel
+        - ready
+      retries: 5
+      timeout: 5s
+      interval: 30s
+      start_period: 15s
+      start_interval: 5s
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
+
   zoraxy:
     init: true
     image: zoraxydocker/zoraxy:${ZORAXY_TAG:-latest}
@@ -77,6 +126,8 @@ services:
     container_name: zoraxy
     depends_on:
       socket-proxy:
+        condition: service_healthy
+      cloudflared:
         condition: service_healthy
     tmpfs:
       - /tmp
@@ -91,8 +142,9 @@ services:
       - ${ZORAXY_HTTPS_PORT:-127.0.0.1:443}:443
       - ${ZORAXY_HTTP_PORT:-127.0.0.1:80}:80
     networks:
-      - zoraxy
       - socket-proxy
+      - cloudflared
+      - zoraxy
     cap_add:
       - NET_ADMIN
       - NET_BIND_SERVICE
