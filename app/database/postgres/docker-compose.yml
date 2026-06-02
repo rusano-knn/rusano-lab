@@ -1,0 +1,42 @@
+name: postgres
+
+volumes:
+  postgres:
+    name: postgres
+
+networks:
+  zoraxy:
+    external: true
+
+services:
+  postgres:
+    init: true
+    image: postgres:${POSTGRES_VERSION:-18}-${POSTGRES_OS:-18}
+    restart: always
+    hostname: postgres
+    container_name: postgres
+    volumes:
+      - postgres:${POSTGRES_VOLUME:-/var/lib/postgresql}
+    networks:
+      - zoraxy
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      PGDATA: ${POSTGRES_VOLUME:-/var/lib/postgresql}/${POSTGRES_VERSION:-18}/docker
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      TZ: ${POSTGRES_TZ:-Etc/UTC}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -d "${POSTGRES_DB:-postgres}" -U "${POSTGRES_USER:-postgres}"
+      retries: 5
+      timeout: 5s
+      interval: 30s
+      start_period: 10s
+      start_interval: 2s
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
