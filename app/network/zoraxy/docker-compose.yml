@@ -23,7 +23,6 @@ networks:
     enable_ipv6: true
   cloudflared:
     name: cloudflared
-    attachable: true
     enable_ipv4: true
     enable_ipv6: true
 
@@ -44,8 +43,8 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      - CONTAINERS=1
-      - NETWORKS=1
+      CONTAINERS: 1
+      NETWORKS: 1
     healthcheck:
       test:
         - CMD
@@ -117,7 +116,7 @@ services:
       zoraxy-socket-proxy:
         condition: service_healthy
       cloudflared:
-        condition: service_healthy
+        condition: service_started
     tmpfs:
       - /tmp
       - /run
