@@ -116,7 +116,7 @@ services:
       zoraxy-socket-proxy:
         condition: service_healthy
       cloudflared:
-        condition: service_healthy
+        condition: service_started
     tmpfs:
       - /tmp
       - /run
