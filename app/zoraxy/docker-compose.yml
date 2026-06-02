@@ -23,7 +23,6 @@ networks:
     enable_ipv6: true
   cloudflared:
     name: cloudflared
-    attachable: true
     enable_ipv4: true
     enable_ipv6: true
 
