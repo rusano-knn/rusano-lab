@@ -1,0 +1,38 @@
+name: adminer
+
+networks:
+  zoraxy:
+    external: true
+
+services:
+  adminer:
+    init: true
+    image: adminer:${DBGATE_TAG:-latest}
+    restart: always
+    hostname: adminer
+    container_name: adminer
+    networks:
+      - zoraxy
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      ADMINER_PLUGINS: ${ADMINER_PLUGINS:-}
+      ADMINER_DESIGN: ${ADMINER_DESIGN:-}
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --spider
+        - --no-verbose
+        - --tries=1
+        - http://127.0.0.1:8080
+      retries: 5
+      timeout: 5s
+      interval: 30s
+      start_period: 10s
+      start_interval: 1s
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
