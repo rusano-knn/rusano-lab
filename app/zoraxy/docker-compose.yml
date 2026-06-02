@@ -43,8 +43,8 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      - CONTAINERS=1
-      - NETWORKS=1
+      CONTAINERS: 1
+      NETWORKS: 1
     healthcheck:
       test:
         - CMD
