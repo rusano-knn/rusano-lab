@@ -90,8 +90,10 @@ services:
     volumes:
       - letsencrypt:/letsencrypt
     ports:
-      - ${TRAEFIK_BIND_ADDRESS:-127.0.0.1}:80:80
-      - ${TRAEFIK_BIND_ADDRESS:-127.0.0.1}:443:443
+      - ${TRAEFIK_BIND_IPV4_ADDRESS:-127.0.0.1}:80:80
+      - ${TRAEFIK_BIND_IPV4_ADDRESS:-127.0.0.1}:443:443
+      - "[${TRAEFIK_BIND_IPV6_ADDRESS:-::1}]:80:80"
+      - "[${TRAEFIK_BIND_IPV6_ADDRESS:-::1}]:443:443"
     networks:
       socket:
       cloudflared:
@@ -143,10 +145,10 @@ services:
       - --ocsp=true
       - --log=${TRAEFIK_LOG:-true}
       - --log.level=${TRAEFIK_LOG_LEVEL:-WARN}
-      - --accesslog=true
+      - --accesslog=${TRAEFIK_ACCESS_LOG:-true}
       - --accesslog.addinternals=true
       - --accesslog.filters.retryattempts=true
-      - --accesslog.filters.statuscodes=400-599
+      - --accesslog.filters.statuscodes=${TRAEFIK_ACCESS_LOG_STATUS_CODE:-400-599}
       - --metrics.addinternals=true
       - --metrics.otlp=${TRAEFIK_METRICS_OTLP:-false}
       - --metrics.otlp.addentrypointslabels=true
