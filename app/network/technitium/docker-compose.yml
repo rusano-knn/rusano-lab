@@ -77,8 +77,8 @@ services:
       - /tmp
     networks:
       traefik:
-        ipv4_address: 10.10.0.2
-        ipv6_address: fd10::2
+        ipv4_address: ${TECHNITIUM_CLIENT_IPV4_ADDRESS:-10.10.0.2}
+        ipv6_address: ${TECHNITIUM_CLIENT_IPV6_ADDRESS:-fd10::2}
     security_opt:
       - no-new-privileges:true
     labels:
