@@ -81,7 +81,7 @@ services:
     restart: always
     hostname: traefik
     container_name: traefik
-    mem_limit: ${CLOUDFLARED_MEM_LIMIT:-128MB}
+    mem_limit: ${TRAEFIK_MEM_LIMIT:-128MB}
     depends_on:
       socket:
         condition: service_started
