@@ -1,0 +1,241 @@
+name: traefik
+
+volumes:
+  letsencrypt:
+    name: traefik-letsencrypt
+    driver: local
+
+networks:
+  traefik:
+    name: traefik
+    driver: bridge
+    external: false
+    internal: false
+    attachable: true
+    enable_ipv4: true
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: ${TRAEFIK_IPV4_SUBNET:-10.10.0.0/16}
+          gateway: ${TRAEFIK_IPV4_GATEWAY:-10.10.0.0}
+        - subnet: ${TRAEFIK_IPV6_SUBNET:-fd10::/64}
+          gateway: ${TRAEFIK_IPV6_GATEWAY:-fd10::0}
+  socket:
+    name: traefik-socket
+    driver: bridge
+    external: false
+    internal: true
+    attachable: false
+    enable_ipv4: true
+    enable_ipv6: false
+  cloudflared:
+    name: traefik-cloudflared
+    driver: bridge
+    external: false
+    internal: false
+    attachable: false
+    enable_ipv4: true
+    enable_ipv6: true
+
+services:
+  socket:
+    init: true
+    image: wollomatic/socket-proxy:${SOCKET_PROXY_TAG:-1}
+    restart: always
+    hostname: socket
+    container_name: traefik-socket
+    read_only: true
+    mem_limit: ${SOCKET_PROXY_MEM_LIMIT:-32MB}
+    user: 0:0
+    volumes:
+      - ${SOCKET_PROXY_DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
+    networks:
+      - socket
+    cap_drop:
+      - ALL
+    security_opt:
+      - label=disable
+      - no-new-privileges:true
+    command:
+      - -loglevel=${SOCKET_PROXY_LOG_LEVEL:-WARN}
+      - -stoponwatchdog
+      - -allowGET=/_ping
+      - -allowHEAD=/_ping
+      - -listenip=0.0.0.0
+      - -allowfrom=traefik
+      - -shutdowngracetime=5
+      - -watchdoginterval=600
+      - -allowGET=/v1\..{1,2}/(version|containers/.*|events.*)
+    healthcheck:
+      disable: true
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
+
+  traefik:
+    init: true
+    image: traefik:${TRAEFIK_TAG:-latest}
+    restart: always
+    hostname: traefik
+    container_name: traefik
+    mem_limit: ${CLOUDFLARED_MEM_LIMIT:-128MB}
+    depends_on:
+      socket:
+        condition: service_started
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - letsencrypt:/letsencrypt
+    ports:
+      - ${TRAEFIK_BIND_ADDRESS:-127.0.0.1}:80:80
+      - ${TRAEFIK_BIND_ADDRESS:-127.0.0.1}:443:443
+      - ${TRAEFIK_BIND_ADDRESS:-127.0.0.1}:8080:8080
+    networks:
+      socket:
+      cloudflared:
+      traefik:
+        ipv4_address: ${TRAEFIK_IPV4_ADDRESS:-10.10.0.1}
+        ipv6_address: ${TRAEFIK_IPV6_ADDRESS:-fd10::1}
+    environment:
+      CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN:?set TRAEFIK_CF_DNS_API_TOKEN in .env}
+    command:
+      - --api=true
+      - --api.dashboard=true
+      - --api.disabledashboardad=${TRAEFIK_DISABLE_AD:-true}
+      - --ping=true
+      - --ping.terminatingStatusCode=204
+      - --providers.docker=true
+      - --providers.docker.watch=true
+      - --providers.docker.network=traefik
+      - --providers.docker.endpoint=tcp://socket:2375
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.http.address=:80
+      - --entrypoints.http.reusePort=true
+      - --entrypoints.http.http.redirections.entrypoint.to=https
+      - --entrypoints.http.http.redirections.entrypoint.scheme=https
+      - --entrypoints.http.http.redirections.entrypoint.permanent=true
+      - --entrypoints.https.address=:443
+      - --entrypoints.https.reusePort=true
+      - --entrypoints.https.http.tls=true
+      - --entrypoints.https.http.tls.certresolver=letsencrypt
+      - --entrypoints.https.http.tls.domains[0].main=${TRAEFIK_TLS_DOMAIN_NAME_0:-example.com}
+      - --entrypoints.https.http.tls.domains[0].sans=${TRAEFIK_TLS_DOMAIN_SANS_0:-*.example.com}
+      - --entrypoints.https.http.encodedCharacters.allowEncodedSlash=${TRAEFIK_ALLOW_ENCODED_CHARACTERS:-false}
+      - --entrypoints.https.http.encodedCharacters.allowEncodedBackSlash=${TRAEFIK_ALLOW_ENCODED_CHARACTERS:-false}
+      - --entrypoints.https.http.encodedCharacters.allowEncodedNullCharacter=${TRAEFIK_ALLOW_ENCODED_CHARACTERS:-false}
+      - --entrypoints.https.http.encodedCharacters.allowEncodedSemicolon=${TRAEFIK_ALLOW_ENCODED_CHARACTERS:-false}
+      - --entrypoints.https.http.encodedCharacters.allowEncodedPercent=${TRAEFIK_ALLOW_ENCODED_CHARACTERS:-false}
+      - --entrypoints.https.http.encodedCharacters.allowEncodedQuestionMark=${TRAEFIK_ALLOW_ENCODED_CHARACTERS:-false}
+      - --entrypoints.https.http.encodedCharacters.allowEncodedHash=${TRAEFIK_ALLOW_ENCODED_CHARACTERS:-false}
+      - --entrypoints.https.http.encodeQuerySemicolons=false
+      - --entrypoints.https.http.sanitizePath=true
+      - --entrypoints.https.http3=true
+      - --entrypoints.https.forwardedHeaders.trustedIPs=${TRAEFIK_TRUSTED_IP:-127.0.0.1/8,192.168.0.0/16,10.10.0.0/16,fd10::/64}
+      - --certificatesresolvers.letsencrypt.acme.keytype=EC384
+      - --certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL:-email@example.com}
+      - --certificatesresolvers.letsencrypt.acme.caserver=${TRAEFIK_ACME_SERVER:-https://acme-staging-v02.api.letsencrypt.org/directory}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53
+      - --ocsp=true
+      - --log=${TRAEFIK_LOG:-true}
+      - --log.level=${TRAEFIK_LOG_LEVEL:-WARN}
+      - --accesslog=true
+      - --accesslog.addinternals=true
+      - --accesslog.filters.retryattempts=true
+      - --accesslog.filters.statuscodes=400-599
+      - --metrics.addinternals=true
+      - --metrics.otlp=${TRAEFIK_METRICS_OTLP:-false}
+      - --metrics.otlp.addentrypointslabels=true
+      - --metrics.otlp.addrouterslabels=true
+      - --metrics.otlp.addserviceslabels=true
+      - --metrics.otlp.grpc=${TRAEFIK_METRICS_OTLP:-false}
+      - --metrics.otlp.grpc.endpoint=${TRAEFIK_METRICS_OTLP_ENDPOINT:-localhost:4317}
+      - --metrics.prometheus=${TRAEFIK_METRICS_PROMETHEUS:-false}
+      - --metrics.prometheus.addentrypointslabels=true
+      - --metrics.prometheus.addrouterslabels=true
+      - --metrics.prometheus.addserviceslabels=true
+      - --tracing=${TRAEFIK_TRACING:-false}
+      - --tracing.addinternals=true
+      - --global.checkNewVersion=${TRAEFIK_COLLECT_TELEMETRY:-false}
+      - --global.sendAnonymousUsage=${TRAEFIK_COLLECT_TELEMETRY:-false}
+    labels:
+      - traefik.enable=true
+      - traefik.docker.allownonrunning=true
+      - traefik.http.routers.traefik.rule=Host(${TRAEFIK_DASHBOARD_HOST:-`traefik.example.com`})
+      - traefik.http.routers.traefik.entrypoints=http,https
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.middlewares.secure-headers.headers.frameDeny=true
+      - traefik.http.middlewares.secure-headers.headers.sslRedirect=true
+      - traefik.http.middlewares.secure-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.secure-headers.headers.stsPreload=true
+      - traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000
+    healthcheck:
+      test:
+        - CMD
+        - traefik
+        - healthcheck
+        - --ping
+      retries: 5
+      interval: 60s
+      start_period: 10s
+      start_interval: 1s
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
+
+  cloudflared:
+    init: true
+    image: cloudflare/cloudflared:${CLOUDFLARED_TAG:-latest}
+    restart: always
+    hostname: cloudflared
+    container_name: traefik-cloudflared
+    depends_on:
+      traefik:
+        condition: service_started
+    mem_limit: ${CLOUDFLARED_MEM_LIMIT:-64MB}
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      - cloudflared
+    sysctls:
+      - net.ipv4.ping_group_range=0 65532
+    security_opt:
+      - no-new-privileges:true
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --loglevel
+      - ${CLOUDFLARED_LOG_LEVEL:-warn}
+      - --metrics
+      - 127.0.0.1:2000
+      - run
+      - --token
+      - ${CLOUDFLARED_TUNNEL_TOKEN:?set CLOUDFLARED_TUNNEL_TOKEN in .env}
+    healthcheck:
+      test:
+        - CMD
+        - cloudflared
+        - tunnel
+        - ready
+      retries: 5
+      interval: 60s
+      start_period: 10s
+      start_interval: 1s
+    logging:
+      driver: json-file
+      options:
+        max-file: 3
+        max-size: 10m
