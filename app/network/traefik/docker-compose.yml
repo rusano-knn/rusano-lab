@@ -219,7 +219,7 @@ services:
       NO_AUTOUPDATE: "true"
       TUNNEL_LOGLEVEL: ${CLOUDFLARED_LOG_LEVEL:-warn}
       TUNNEL_METRICS: 127.0.0.1:2000
-      TUNNEL_TOKEN: ${CLOUDFLARED_TOKEN:?set CLOUDFLARED_TOKEN in .env}
+      TUNNEL_TOKEN: ${CLOUDFLARED_TUNNEL_TOKEN:?set CLOUDFLARED_TUNNEL_TOKEN in .env}
     command:
       - tunnel
       - run
