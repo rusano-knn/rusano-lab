@@ -215,16 +215,14 @@ services:
       - net.ipv4.ping_group_range=0 65532
     security_opt:
       - no-new-privileges:true
+    environment:
+      NO_AUTOUPDATE: "true"
+      TUNNEL_LOGLEVEL: ${CLOUDFLARED_LOG_LEVEL:-warn}
+      TUNNEL_METRICS: 127.0.0.1:2000
+      TUNNEL_TOKEN: ${CLOUDFLARED_TOKEN:?set CLOUDFLARED_TOKEN in .env}
     command:
       - tunnel
-      - --no-autoupdate
-      - --loglevel
-      - ${CLOUDFLARED_LOG_LEVEL:-warn}
-      - --metrics
-      - 127.0.0.1:2000
       - run
-      - --token
-      - ${CLOUDFLARED_TUNNEL_TOKEN:?set CLOUDFLARED_TUNNEL_TOKEN in .env}
     healthcheck:
       test:
         - CMD
