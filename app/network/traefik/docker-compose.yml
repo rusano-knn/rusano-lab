@@ -46,7 +46,7 @@ services:
     hostname: socket
     container_name: traefik-socket
     read_only: true
-    mem_limit: ${SOCKET_PROXY_MEM_LIMIT:-32MB}
+    mem_limit: ${SOCKET_PROXY_MEM_LIMIT:-64MB}
     user: 0:0
     volumes:
       - ${SOCKET_PROXY_DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
@@ -165,7 +165,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.allownonrunning=true
-      - traefik.http.routers.traefik.rule=Host(${TRAEFIK_DASHBOARD_HOST:-`traefik-dashboard.example.com`})
+      - traefik.http.routers.traefik.rule=Host(`${TRAEFIK_DASHBOARD_HOST:-traefik-dashboard.example.com}`)
       - traefik.http.routers.traefik.entrypoints=http,https
       - traefik.http.routers.traefik.service=api@internal
       - traefik.http.middlewares.secure-headers.headers.frameDeny=true
