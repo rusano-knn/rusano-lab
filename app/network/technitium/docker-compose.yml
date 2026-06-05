@@ -1,47 +1,64 @@
 name: technitium
 
 volumes:
-  technitium-config:
+  config:
     name: technitium-config
-  technitium-logs:
+  logs:
     name: technitium-logs
 
 networks:
-  zoraxy:
+  traefik:
+    name: traefik
     external: true
 
 services:
-  technitium-server:
+  technitium:
     init: true
     image: technitium/dns-server:${TECHNITIUM_SERVER_TAG:-latest}
     restart: always
-    hostname: technitium-server
+    hostname: technitium
     container_name: technitium-server
-    network_mode: host
-    # networks:
-    #   - zoraxy
-    # ports:
-    #   - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:53:53/udp #DNS service
-    #   - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:53:53/tcp #DNS service
-    #   - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:443:443/udp #DNS-over-HTTPS service (HTTP/3)
-    #   - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:443:443/tcp #DNS-over-HTTPS service (HTTP/1.1, HTTP/2)
-    #   - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:853:853/udp #DNS-over-QUIC service
-    #   - ${TECHNITIUM_SERVER_IPV4_ADDRESS:-127.0.0.1}:853:853/tcp #DNS-over-TLS service
-    #   - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:53:53/udp" #DNS service
-    #   - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:53:53/tcp" #DNS service
-    #   - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:443:443/udp" #DNS-over-HTTPS service (HTTP/3)
-    #   - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:443:443/tcp" #DNS-over-HTTPS service (HTTP/1.1, HTTP/2)
-    #   - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:853:853/udp" #DNS-over-QUIC service
-    #   - "[${TECHNITIUM_SERVER_IPV6_ADDRESS:-::1}]:853:853/tcp" #DNS-over-TLS service
-    #   - ${TECHNITIUM_WEB_HTTP_PORT:-127.0.0.1:5380}:5380/tcp #DNS web console (HTTP)
-    #   - ${TECHNITIUM_WEB_HTTPS_PORT:-127.0.0.1:53443}:53443/tcp #DNS web console (HTTPS)
+    mem_limit: ${TECHNITIUM_SERVER_MEM_LIMIT:-256MB}
+    networks:
+      traefik:
+        ipv4_address: ${TECHNITIUM_SERVER_IPV4_ADDRESS:-10.10.10.10}
+        ipv6_address: ${TECHNITIUM_SERVER_IPV6_ADDRESS:-fd10::10:10:10}
+    ports:
+      - ${TECHNITIUM_BIND_IPV4_ADDRESS:-127.0.0.1}:53:53/udp
+      - ${TECHNITIUM_BIND_IPV4_ADDRESS:-127.0.0.1}:53:53/tcp
+      - ${TECHNITIUM_BIND_IPV4_ADDRESS:-127.0.0.1}:443:443/udp
+      - ${TECHNITIUM_BIND_IPV4_ADDRESS:-127.0.0.1}:443:443/tcp
+      - ${TECHNITIUM_BIND_IPV4_ADDRESS:-127.0.0.1}:853:853/udp
+      - ${TECHNITIUM_BIND_IPV4_ADDRESS:-127.0.0.1}:853:853/tcp
+      - "[${TECHNITIUM_BIND_IPV6_ADDRESS:-::1}]:53:53/udp"
+      - "[${TECHNITIUM_BIND_IPV6_ADDRESS:-::1}]:53:53/tcp"
+      - "[${TECHNITIUM_BIND_IPV6_ADDRESS:-::1}]:443:443/udp"
+      - "[${TECHNITIUM_BIND_IPV6_ADDRESS:-::1}]:443:443/tcp"
+      - "[${TECHNITIUM_BIND_IPV6_ADDRESS:-::1}]:853:853/udp"
+      - "[${TECHNITIUM_BIND_IPV6_ADDRESS:-::1}]:853:853/tcp"
+      - ${TECHNITIUM_CONSOLE_HTTP_BIND_PORT:-127.0.0.1:5380}:5380/tcp
     volumes:
-      - technitium-config:/etc/dns
-      - technitium-logs:/var/log/technitium/dns
-    # sysctls:
-    #   - net.ipv4.ip_local_port_range=1024 65535
+      - config:/etc/dns
+      - logs:/var/log/technitium/dns
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
     security_opt:
       - no-new-privileges:true
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.technitium.rule=Host(`${TECHNITIUM_CONSOLE_HOST:-technitium-console.example.com}`)
+      - traefik.http.routers.technitium.entrypoints=https
+      - traefik.http.routers.technitium.service=technitium
+      - traefik.http.services.technitium.loadbalancer.server.port=53443
+      - traefik.http.services.technitium.loadbalancer.server.scheme=https
+      - traefik.http.middlewares.secure-headers.headers.frameDeny=true
+      - traefik.http.middlewares.secure-headers.headers.sslRedirect=true
+      - traefik.http.middlewares.secure-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.secure-headers.headers.stsPreload=true
+      - traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000
     logging:
       driver: json-file
       options:
@@ -51,16 +68,33 @@ services:
   technitium-client:
     init: true
     image: technitium/dns-client:${TECHNITIUM_CLIENT_TAG:-latest}
-    restart: always
+    restart: unless-stopped
     hostname: technitium-client
     container_name: technitium-client
+    mem_limit: 64MB
     read_only: true
-    networks:
-      - zoraxy
     tmpfs:
       - /tmp
+    networks:
+      traefik:
+        ipv4_address: 10.10.0.2
+        ipv6_address: fd10::2
     security_opt:
       - no-new-privileges:true
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.technitium-client.rule=Host(`${TECHNITIUM_CLIENT_HOST:-technitium-client.example.com}`)
+      - traefik.http.routers.technitium-client.entrypoints=http
+      - traefik.http.routers.technitium-client.service=technitium-client
+      - traefik.http.services.technitium-client.loadbalancer.server.port=8001
+      - traefik.http.middlewares.secure-headers.headers.frameDeny=true
+      - traefik.http.middlewares.secure-headers.headers.sslRedirect=true
+      - traefik.http.middlewares.secure-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.secure-headers.headers.stsPreload=true
+      - traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000
     logging:
       driver: json-file
       options:
