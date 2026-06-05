@@ -71,7 +71,7 @@ services:
     restart: unless-stopped
     hostname: technitium-client
     container_name: technitium-client
-    mem_limit: 64MB
+    mem_limit: ${TECHNITIUM_CLIENT_MEM_LIMIT:-64MB}
     read_only: true
     tmpfs:
       - /tmp
