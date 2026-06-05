@@ -134,7 +134,7 @@ services:
       - --entrypoints.https.http3=true
       - --entrypoints.https.forwardedHeaders.trustedIPs=${TRAEFIK_TRUSTED_IP:-127.0.0.1/8,192.168.0.0/16,10.10.0.0/16,fd10::/64}
       - --certificatesresolvers.letsencrypt.acme.keytype=EC384
-      - --certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL:-email@example.com}
+      - --certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL:-acme-email@example.com}
       - --certificatesresolvers.letsencrypt.acme.caserver=${TRAEFIK_ACME_SERVER:-https://acme-staging-v02.api.letsencrypt.org/directory}
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
@@ -165,7 +165,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.allownonrunning=true
-      - traefik.http.routers.traefik.rule=Host(${TRAEFIK_DASHBOARD_HOST:-`traefik.example.com`})
+      - traefik.http.routers.traefik.rule=Host(${TRAEFIK_DASHBOARD_HOST:-`traefik-dashboard.example.com`})
       - traefik.http.routers.traefik.entrypoints=http,https
       - traefik.http.routers.traefik.service=api@internal
       - traefik.http.middlewares.secure-headers.headers.frameDeny=true
@@ -194,7 +194,7 @@ services:
   cloudflared:
     init: true
     image: cloudflare/cloudflared:${CLOUDFLARED_TAG:-latest}
-    restart: always
+    restart: unless-stopped
     hostname: cloudflared
     container_name: traefik-cloudflared
     depends_on:
