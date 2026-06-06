@@ -19,6 +19,7 @@ services:
     hostname: technitium
     container_name: technitium-server
     mem_limit: ${TECHNITIUM_SERVER_MEM_LIMIT:-256MB}
+    network_mode: pasta
     # networks:
     #   traefik:
     #     ipv4_address: ${TECHNITIUM_SERVER_IPV4_ADDRESS:-10.10.10.10}
