@@ -6,10 +6,10 @@ volumes:
   logs:
     name: technitium-logs
 
-# networks:
-#   traefik:
-#     name: traefik
-#     external: true
+networks:
+  traefik:
+    name: traefik
+    external: true
 
 services:
   technitium:
@@ -20,10 +20,10 @@ services:
     container_name: technitium-server
     mem_limit: ${TECHNITIUM_SERVER_MEM_LIMIT:-256MB}
     network_mode: pasta
-    # networks:
-    #   traefik:
-    #     ipv4_address: ${TECHNITIUM_SERVER_IPV4_ADDRESS:-10.10.10.10}
-    #     ipv6_address: ${TECHNITIUM_SERVER_IPV6_ADDRESS:-fd10::10:10:10}
+    networks:
+      traefik:
+        ipv4_address: ${TECHNITIUM_SERVER_IPV4_ADDRESS:-10.10.10.10}
+        ipv6_address: ${TECHNITIUM_SERVER_IPV6_ADDRESS:-fd10::10:10:10}
     ports:
       - ${TECHNITIUM_SERVER_BIND_IPV4_ADDRESS:-127.0.0.1}:53:53/udp
       - ${TECHNITIUM_SERVER_BIND_IPV4_ADDRESS:-127.0.0.1}:53:53/tcp
@@ -76,10 +76,10 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-    # networks:
-    #   traefik:
-    #     ipv4_address: ${TECHNITIUM_CLIENT_IPV4_ADDRESS:-10.10.0.2}
-    #     ipv6_address: ${TECHNITIUM_CLIENT_IPV6_ADDRESS:-fd10::2}
+    networks:
+      traefik:
+        ipv4_address: ${TECHNITIUM_CLIENT_IPV4_ADDRESS:-10.10.0.2}
+        ipv6_address: ${TECHNITIUM_CLIENT_IPV6_ADDRESS:-fd10::2}
     security_opt:
       - no-new-privileges:true
     labels:
