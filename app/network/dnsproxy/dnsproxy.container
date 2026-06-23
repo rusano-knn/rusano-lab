@@ -1,0 +1,41 @@
+# Managed by rusano-cloudlab
+# Source: https://github.com/rusano-knn/rusano-lab
+# Version: 1.0.0
+# Updated: 2026-06-22
+
+[Unit]
+Description=Adguard DNS Proxy Container
+
+[Container]
+ContainerName=dnsproxy
+Image=docker.io/adguard/dnsproxy:latest
+
+# Ports - bound to dedicated loopback IP 127.53.53.53 (local only, no proxy)
+PublishPort=127.53.53.53:53:53/udp
+PublishPort=127.53.53.53:53:53/tcp
+
+# Security
+NoNewPrivileges=true
+DropCapability=ALL
+AddCapability=NET_BIND_SERVICE,NET_RAW
+ReadOnly=true
+Tmpfs=/tmp /run /var/tmp
+
+# Volumes
+# Mount the configuration YAML file from host
+Volume=%h/config/dnsproxy/config.yaml:/opt/dnsproxy/config.yaml:ro,Z
+
+# Command line configuration
+# --config-path points to mounted yaml file
+Exec=--config-path=/opt/dnsproxy/config.yaml
+
+# Auto-update
+AutoUpdate=registry
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=always
+UMask=0077
+
