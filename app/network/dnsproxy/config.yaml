@@ -1,0 +1,51 @@
+# Configuration file for Adguard dnsproxy
+# For all available options see: dnsproxy --help
+---
+# Listening addresses (dnsproxy will listen on 0.0.0.0 inside the container)
+listen-addrs:
+  - "0.0.0.0"
+
+# Listening ports
+listen-ports:
+  - 53
+
+# Bootstrap DNS for DoH/DoT upstreams
+bootstrap:
+  - "194.242.2.4:53"
+
+# Upstream DNS servers (Technitium recursive DNS server at 127.10.10.10)
+upstream:
+  - "https://base.dns.mullvad.net/dns-query"
+
+# Fallback DNS resolvers
+fallback:
+  - "https://base.dns.mullvad.net/dns-query"
+
+# DNSSEC validation (enabled by default)
+dnssec: true
+
+# Caching options
+cache: true
+cache-size: 65536 # in bytes (64 MiB)
+cache-min-ttl: 0
+cache-max-ttl: 3600
+cache-optimistic: true
+
+# Rate limiting (requests per second, 0 to disable)
+ratelimit: 0
+ratelimit-subnet-len-ipv4: 24
+ratelimit-subnet-len-ipv6: 64
+
+# Performance / Execution tuning
+max-go-routines: 0
+udp-buf-size: 0
+timeout: "10s"
+
+# Other features
+verbose: false
+ipv6-disabled: false
+hosts-file-enabled: true
+pending-requests-enabled: true
+refuse-any: false
+edns: true
+http3: true
