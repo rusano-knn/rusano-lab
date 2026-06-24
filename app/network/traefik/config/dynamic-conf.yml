@@ -1,0 +1,109 @@
+# Managed by rusano-cloudlab
+# Source: https://github.com/rusano-knn/rusano-lab
+# Version: 1.0.0
+# Updated: 2026-06-22
+
+http:
+  routers:
+    # Authentik
+    authentik:
+      rule: Host(`auth.example.com`)
+      service: authentik
+      entryPoints:
+        - https
+      middlewares:
+        - secure-headers
+      tls:
+        certResolver: letsencrypt
+
+    # Open WebUI
+    openwebui:
+      rule: Host(`ai.example.com`)
+      service: openwebui
+      entryPoints:
+        - https
+      middlewares:
+        - secure-headers
+      tls:
+        certResolver: letsencrypt
+
+    # SillyTavern
+    sillytavern:
+      rule: Host(`tavern.example.com`)
+      service: sillytavern
+      entryPoints:
+        - https
+      middlewares:
+        - secure-headers
+      tls:
+        certResolver: letsencrypt
+
+    # SearXNG
+    searxng:
+      rule: Host(`search.example.com`)
+      service: searxng
+      entryPoints:
+        - https
+      middlewares:
+        - secure-headers
+      tls:
+        certResolver: letsencrypt
+
+    # Technitium Console
+    technitium:
+      rule: Host(`dns.example.com`)
+      service: technitium
+      entryPoints:
+        - https
+      middlewares:
+        - secure-headers
+      tls:
+        certResolver: letsencrypt
+
+    # Traefik Dashboard / Console
+    traefik-dashboard:
+      rule: Host(`traefik.example.com`)
+      service: api@internal
+      entryPoints:
+        - https
+      middlewares:
+        - secure-headers
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    authentik:
+      loadBalancer:
+        servers:
+          - url: http://authentik-server:9000
+
+    openwebui:
+      loadBalancer:
+        servers:
+          - url: http://openwebui:8080
+
+    sillytavern:
+      loadBalancer:
+        servers:
+          - url: http://sillytavern:8000
+
+    searxng:
+      loadBalancer:
+        servers:
+          - url: http://searxng:8080
+
+    technitium:
+      loadBalancer:
+        servers:
+          - url: http://technitium:5380
+
+  middlewares:
+    secure-headers:
+      headers:
+        frameDeny: true
+        sslRedirect: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
