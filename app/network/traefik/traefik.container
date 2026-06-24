@@ -1,0 +1,42 @@
+# Managed by rusano-cloudlab
+# Source: https://github.com/rusano-knn/rusano-lab
+# Version: 1.0.0
+# Updated: 2026-06-22
+
+[Unit]
+Description=Traefik Reverse Proxy Container
+After=traefik.pod
+Requires=traefik.pod
+
+[Container]
+ContainerName=traefik
+Image=docker.io/library/traefik:v3.0
+Pod=traefik.pod
+
+
+# Security
+NoNewPrivileges=true
+DropCapability=ALL
+AddCapability=NET_BIND_SERVICE
+ReadOnly=true
+Tmpfs=/tmp /run /var/tmp
+
+# Volumes
+Volume=%h/config/traefik/traefik-static.yml:/etc/traefik/traefik-static.yml:ro,Z
+Volume=%h/config/traefik/dynamic-conf.yml:/etc/traefik/dynamic-conf.yml:ro,Z
+Volume=traefik-letsencrypt:/letsencrypt:Z
+Volume=traefik-data:/var/log/traefik:Z
+
+# Environment and Secrets
+Secret=traefik-secrets,type=env
+
+# Auto-update
+AutoUpdate=registry
+
+[Install]
+WantedBy=traefik.pod
+
+[Service]
+Restart=always
+UMask=0077
+

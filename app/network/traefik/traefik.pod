@@ -1,0 +1,23 @@
+# Managed by rusano-cloudlab
+# Source: https://github.com/rusano-knn/rusano-lab
+# Version: 1.0.0
+# Updated: 2026-06-22
+
+[Unit]
+Description=Traefik Pod
+
+[Pod]
+PodName=traefik
+Network=traefik
+
+# Ports - published on host-routed IP (preserving source IP via pasta/pesto)
+PublishPort=${TRAEFIK_BIND_IPV4}:80:80
+PublishPort=${TRAEFIK_BIND_IPV4}:443:443
+PublishPort=[${TRAEFIK_BIND_IPV6}]:80:80
+PublishPort=[${TRAEFIK_BIND_IPV6}]:443:443
+
+[Service]
+EnvironmentFile=%h/.config/containers/systemd/traefik.env
+
+[Install]
+WantedBy=default.target
