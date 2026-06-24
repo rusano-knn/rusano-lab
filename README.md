@@ -7,8 +7,9 @@ This repository contains the configuration, architecture, and deployment specs f
 ## Architecture Overview
 
 The lab is split into three main access tiers:
+
 1. **Public Web Services**: Exposed via Cloudflare DNS and Cloudflare Tunnel (`cloudflared`) to [Traefik (ACME-only)](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/traefik/traefik.container), routing traffic to internal services.
-2. **Private DNS (Local Resolver)**: Local systemd-resolved queries forwarded via [Adguard dnsproxy](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/dnsproxy/dnsproxy.container) to the [Technitium DNS Server](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/technitium/technitium-server.container) on loopback IPs.
+2. **Private DNS (Local Resolver)**: Local systemd-resolved queries forwarded via [Adguard dnsproxy](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/dnsproxy/dnsproxy.container) to the [Technitium DNS Server](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/technitium/technitium.container) on loopback IPs.
 3. **VPN & Admin Services**: Sensitive settings, settings/consoles, and dashboards that are accessible only via the Tailscale VPN network.
 
 ### System Topology
@@ -26,7 +27,7 @@ graph TD
         TechDNS[Technitium DNS Server @ 127.10.10.10]
     end
 
-    subgraph traefik-net Bridge Network
+    subgraph traefik Bridge Network
         Traefik[Traefik Proxy @ 10.0.0.100]
         Authentik[Authentik IdP @ 127.0.1.20]
         OpenWebUI[Open WebUI @ 127.0.2.10]
@@ -51,6 +52,7 @@ graph TD
 ## Core Security Tenets
 
 All services in this lab strictly adhere to the following rules from [AGENTS.md](file:///home/rusano/Projects/Code/rusano/rusano-lab/AGENTS.md):
+
 - **Rootless & Unprivileged**: No container runs as root. The Podman daemon runs in the user space of an unprivileged host user.
 - **Strict Capabilities Drop**: All containers deploy with `DropCapability=ALL`. Only essential capabilities (like `NET_BIND_SERVICE` or `NET_RAW`) are added back.
 - **ReadOnly Filesystems**: Containers run with `ReadOnly=true`. Dynamic writes are strictly limited to explicit `Tmpfs` and named volumes.
@@ -66,8 +68,8 @@ This matrix acts as the single source of truth for all network ports and host in
 | Service / Pod | Host IP | Target Ports | Zone / Purpose | Configuration |
 | :--- | :--- | :--- | :--- | :--- |
 | **Traefik Proxy** | `10.0.0.100` | `:80`, `:443` | Host-Routed Proxy | [traefik.container](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/traefik/traefik.container) |
-| **Technitium DNS** | `127.10.10.10` | `:53`, `:5380`, `:53443` | Private DNS Server | [technitium-server.container](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/technitium/technitium-server.container) |
-| **Adguard dnsproxy**| `127.10.10.12` | `:53`          | Local DNS Forwarder       | [dnsproxy.container](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/dnsproxy/dnsproxy.container) |
+| **Technitium DNS** | `127.10.10.10` | `:53`, `:5380`, `:53443` | Private DNS Server | [technitium.container](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/technitium/technitium.container) |
+| **Adguard dnsproxy** | `127.10.10.12` | `:53` | Local DNS Forwarder | [dnsproxy.container](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/network/dnsproxy/dnsproxy.container) |
 | **Authentik SSO** | `127.0.1.20` | `:9000`, `:9443` | Identity Management | [authentik-server.container](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/auth/authentik/authentik-server.container) |
 | **Open WebUI** | `127.0.2.10` | `:8080` | AI Chat Client | [openwebui.container](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/ai/openwebui/openwebui.container) |
 | **SillyTavern** | `127.0.2.11` | `:8000` | AI Roleplay Client | [sillytavern.container](file:///home/rusano/Projects/Code/rusano/rusano-lab/app/ai/sillytavern/sillytavern.container) |
