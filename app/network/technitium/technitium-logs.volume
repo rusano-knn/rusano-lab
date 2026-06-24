@@ -1,0 +1,8 @@
+# Managed by rusano-cloudlab
+# Source: https://github.com/rusano-knn/rusano-lab
+# Version: 1.0.0
+# Updated: 2026-06-22
+
+[Volume]
+VolumeName=technitium-logs
+Driver=local

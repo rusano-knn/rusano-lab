@@ -1,0 +1,35 @@
+# Managed by rusano-cloudlab
+# Source: https://github.com/rusano-knn/rusano-lab
+# Version: 1.0.0
+# Updated: 2026-06-22
+
+[Unit]
+Description=Technitium DNS Pod
+
+[Pod]
+PodName=technitium
+Network=traefik
+
+# Ports - bound to dedicated IPs (preserving source IP via pasta/pesto)
+PublishPort=${TECHNITIUM_BIND_IPV4}:53:53/udp
+PublishPort=${TECHNITIUM_BIND_IPV4}:53:53/tcp
+PublishPort=${TECHNITIUM_BIND_IPV4}:443:443/udp
+PublishPort=${TECHNITIUM_BIND_IPV4}:443:443/tcp
+PublishPort=${TECHNITIUM_BIND_IPV4}:853:853/udp
+PublishPort=${TECHNITIUM_BIND_IPV4}:853:853/tcp
+
+PublishPort=[${TECHNITIUM_BIND_IPV6}]:53:53/udp
+PublishPort=[${TECHNITIUM_BIND_IPV6}]:53:53/tcp
+PublishPort=[${TECHNITIUM_BIND_IPV6}]:443:443/udp
+PublishPort=[${TECHNITIUM_BIND_IPV6}]:443:443/tcp
+PublishPort=[${TECHNITIUM_BIND_IPV6}]:853:853/udp
+PublishPort=[${TECHNITIUM_BIND_IPV6}]:853:853/tcp
+
+PublishPort=127.100.100.100:5380:5380/tcp
+PublishPort=127.100.100.100:53443:53443/tcp
+
+[Service]
+EnvironmentFile=%h/.config/containers/systemd/technitium.env
+
+[Install]
+WantedBy=default.target
