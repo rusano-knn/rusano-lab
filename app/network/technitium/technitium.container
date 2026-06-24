@@ -1,0 +1,37 @@
+# Managed by rusano-cloudlab
+# Source: https://github.com/rusano-knn/rusano-lab
+# Version: 1.0.0
+# Updated: 2026-06-22
+
+[Unit]
+Description=Technitium DNS Server Container
+After=technitium.pod
+Requires=technitium.pod
+
+[Container]
+ContainerName=technitium
+Image=docker.io/technitium/dns-server:latest
+Pod=technitium.pod
+
+
+# Security
+NoNewPrivileges=true
+DropCapability=ALL
+AddCapability=NET_BIND_SERVICE,NET_RAW,NET_ADMIN
+ReadOnly=true
+Tmpfs=/tmp /run /var/tmp
+
+# Volumes
+Volume=technitium-config:/etc/dns:Z
+Volume=technitium-logs:/var/log/technitium/dns:Z
+
+# Auto-update
+AutoUpdate=registry
+
+[Install]
+WantedBy=technitium.pod
+
+[Service]
+Restart=always
+UMask=0077
+
