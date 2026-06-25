@@ -273,6 +273,17 @@ Before starting, update the domain rules in [dynamic-conf.yml](file:///home/rusa
 1. Log into your Cloudflare dashboard and create a DNS A/AAAA record pointing to your cloud host IP.
 2. In the Tunnel settings, set `dns.yourdomain.com` to point to `https://10.0.0.100:443` (Traefik).
 3. Configure your host's local DNS resolver (e.g. `systemd-resolved`) to route queries through the DNS Proxy (`127.10.10.12`) on port `53`. The proxy will cache and forward queries to the Technitium DNS Server at `127.10.10.10`.
+4. **Generate and Install an SSL/TLS Certificate** for the Web Console and the DNS Server (DoT/DoH):
+   - Run the interactive certificate generation utility from the repository root:
+     ```bash
+     ./lab.sh cert
+     ```
+   - Follow the prompts to enter your Let's Encrypt email address, your Technitium DNS domain (e.g., `dns.yourdomain.com`), your Cloudflare DNS API Token, and a secure password for the PFX bundle.
+   - The script will run ephemeral ACME and conversion containers to issue the certificate, bundle it into a PKCS#12 `.pfx` file, copy it directly to `/etc/dns/certs/dns.pfx` in the Technitium configuration volume, and cleanly remove all temporary containers and downloaded images.
+   - Log into the Technitium Web Console (by default at `http://127.100.100.100:5380`).
+   - Navigate to **Settings** > **Web Service**.
+   - Set **TLS Certificate File Path** to `/etc/dns/certs/dns.pfx`.
+   - Enter your chosen password in the **TLS Certificate Password** field and save the settings. Technitium will immediately read and apply the certificate without requiring a service restart.
 
 ### Authentik Setup
 
